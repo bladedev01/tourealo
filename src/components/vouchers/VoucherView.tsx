@@ -425,18 +425,18 @@ export function VoucherView({ code }: VoucherViewProps) {
                         const value = tier?.value ?? tier?.amount ?? tier?.qty;
                         if (typeof hoursBefore === "number") {
                           return (
-                            <li key={index}>{t("policy.hoursBefore", "Hasta {hours} horas antes: reembolso {percent}%", { hours: hoursBefore, percent: percent ?? 0 })}</li>
+                            <li key={index}>{t("policy.hoursBefore", { defaultValue: "Hasta {hours} horas antes: reembolso {percent}%", hours: hoursBefore, percent: percent ?? 0 })}</li>
                           );
                         }
                         if (unit && value != null) {
                           return (
-                            <li key={index}>{t("policy.unit", "Hasta {value} {unit} antes: reembolso {percent}%", { value, unit, percent: percent ?? 0 })}</li>
+                            <li key={index}>{t("policy.unit", { defaultValue: "Hasta {value} {unit} antes: reembolso {percent}%", value, unit, percent: percent ?? 0 })}</li>
                           );
                         }
                         if (percent != null) {
-                          return <li key={index}>{t("policy.percent", "Reembolso {percent}% según condiciones", { percent })}</li>;
+                          return <li key={index}>{t("policy.percent", { defaultValue: "Reembolso {percent}% según condiciones", percent })}</li>;
                         }
-                        return <li key={index}>{t("policy.generic", "Consulta las condiciones de reembolso")}</li>;
+                        return <li key={index}>{t("policy.generic", { defaultValue: "Consulta las condiciones de reembolso" })}</li>;
                       })}
                     </ul>
                   )}
