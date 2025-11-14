@@ -38,6 +38,15 @@ const STORAGE_PREFIX = "voucher_token_";
 
 export function VoucherView({ code }: VoucherViewProps) {
   const { t } = useTranslation("frontend-voucher");
+  // Helper to format translations with simple {placeholders}
+  const fmt = (key: string, defaultValue: string, vars?: Record<string, any>) => {
+    const template = t(key, defaultValue);
+    if (!vars) return template;
+    return String(template).replace(/\{(\w+)\}/g, (_m, name) => {
+      const v = vars[name];
+      return v === undefined || v === null ? "" : String(v);
+    });
+  };
   const searchParams = useSearchParams();
   const router = useRouter();
   const [state, setState] = useState<VoucherState>({ booking: null, loading: true, error: null, qrUrl: null });
@@ -425,18 +434,18 @@ export function VoucherView({ code }: VoucherViewProps) {
                         const value = tier?.value ?? tier?.amount ?? tier?.qty;
                         if (typeof hoursBefore === "number") {
                           return (
-                            <li key={index}>{t("policy.hoursBefore", { defaultValue: "Hasta {hours} horas antes: reembolso {percent}%", hours: hoursBefore, percent: percent ?? 0 })}</li>
+                            <li key={index}>{fmt("policy.hoursBefore", "Hasta {hours} horas antes: reembolso {percent}%", { hours: hoursBefore, percent: percent ?? 0 })}</li>
                           );
                         }
                         if (unit && value != null) {
                           return (
-                            <li key={index}>{t("policy.unit", { defaultValue: "Hasta {value} {unit} antes: reembolso {percent}%", value, unit, percent: percent ?? 0 })}</li>
+                            <li key={index}>{fmt("policy.unit", "Hasta {value} {unit} antes: reembolso {percent}%", { value, unit, percent: percent ?? 0 })}</li>
                           );
                         }
                         if (percent != null) {
-                          return <li key={index}>{t("policy.percent", { defaultValue: "Reembolso {percent}% según condiciones", percent })}</li>;
+                          return <li key={index}>{fmt("policy.percent", "Reembolso {percent}% según condiciones", { percent })}</li>;
                         }
-                        return <li key={index}>{t("policy.generic", { defaultValue: "Consulta las condiciones de reembolso" })}</li>;
+                        return <li key={index}>{fmt("policy.generic", "Consulta las condiciones de reembolso")}</li>;
                       })}
                     </ul>
                   )}
@@ -515,7 +524,7 @@ export function VoucherView({ code }: VoucherViewProps) {
               {booking.freeCancellationDeadline && (
                 <div className="rounded-3xl border border-emerald-200 bg-emerald-50/80 p-6 text-sm text-emerald-800">
                   <CheckCircle2 className="mb-2 h-5 w-5" aria-hidden />
-                  {t("details.freeCancelUntil", "Cancelación gratis hasta: {date}", {
+                  {fmt("details.freeCancelUntil", "Cancelación gratis hasta: {date}", {
                     date: new Date(booking.freeCancellationDeadline).toLocaleString(),
                   })}
                 </div>
