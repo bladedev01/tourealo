@@ -79,20 +79,21 @@ export default async function RootLayout({
   const language = await detectLanguage({ availableLanguages, fallbackLanguage });
   const initialNamespaces = await fetchNamespaces(language, ["frontend-common", "frontend-navbar", "frontend-footer"]);
   // Sanitize settings before sending to the client to avoid leaking secrets
+  const s: any = settings as any;
   const publicSettings = {
-    appName: settings.appName,
-    appLogo: settings.appLogo,
-    appIcon: settings.appIcon,
-    availableLanguages: settings.availableLanguages || [],
-    availableCurrencies: settings.availableCurrencies || [],
-    defaultLanguage: settings.defaultLanguage,
-    frontendUrl: settings.frontendUrl,
-    paypalEnabled: settings.paypalEnabled,
-    paypalClientId: settings.paypalClientId,
-    googleMapsApiKey: settings.googleMapsApiKey ?? undefined,
+    appName: s.appName,
+    appLogo: s.appLogo,
+    appIcon: s.appIcon,
+    availableLanguages: s.availableLanguages || [],
+    availableCurrencies: s.availableCurrencies || [],
+    defaultLanguage: s.defaultLanguage,
+    frontendUrl: s.frontendUrl,
+    paypalEnabled: s.paypalEnabled,
+    paypalClientId: s.paypalClientId,
+    googleMapsApiKey: s.googleMapsApiKey ?? undefined,
     branding: {
-      logoUrl: settings.branding?.logoUrl,
-      defaultCoverUrl: settings.branding?.defaultCoverUrl,
+      logoUrl: s.branding?.logoUrl,
+      defaultCoverUrl: s.branding?.defaultCoverUrl,
     },
   } as unknown as Settings;
 
