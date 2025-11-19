@@ -78,13 +78,31 @@ export default async function RootLayout({
   const fallbackLanguage = getFallbackLanguage(settings.defaultLanguage, availableLanguages);
   const language = await detectLanguage({ availableLanguages, fallbackLanguage });
   const initialNamespaces = await fetchNamespaces(language, ["frontend-common", "frontend-navbar", "frontend-footer"]);
+  // Sanitize settings before sending to the client to avoid leaking secrets
+  const publicSettings = {
+    appName: settings.appName,
+    appLogo: settings.appLogo,
+    appIcon: settings.appIcon,
+    availableLanguages: settings.availableLanguages || [],
+    availableCurrencies: settings.availableCurrencies || [],
+    defaultLanguage: settings.defaultLanguage,
+    frontendUrl: settings.frontendUrl,
+    paypalEnabled: settings.paypalEnabled,
+    paypalClientId: settings.paypalClientId,
+    googleMapsApiKey: settings.googleMapsApiKey ?? undefined,
+    branding: {
+      logoUrl: settings.branding?.logoUrl,
+      defaultCoverUrl: settings.branding?.defaultCoverUrl,
+    },
+  } as unknown as Settings;
+
   return (
     <html lang={language}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-slate-900`}>
         <LanguageServerProvider
           value={{ language, defaultLanguage: explicitDefaultLanguage ?? "", fallbackLanguage, availableLanguages }}
         >
-          <SettingsProvider initialSettings={settings}>
+          <SettingsProvider initialSettings={publicSettings}>
             <LanguageProvider
               initialLanguage={language}
               availableLanguages={availableLanguages}
