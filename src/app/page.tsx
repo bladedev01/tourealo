@@ -20,36 +20,66 @@ import { getCachedSettings } from "@/services/settings-cache";
 import type { Settings } from "@/types/settings";
 
 export default async function Home() {
-  const settings = await getCachedSettings().catch<Settings>(() => ({
-    appName: "Tourealo",
-    availableLanguages: [],
-  }));
+  let settings: Settings;
+  try {
+    settings = await getCachedSettings();
+  } catch (err: any) {
+    console.error("Home: failed to load settings:", err?.message || err);
+    settings = { appName: "Tourealo", availableLanguages: [] } as Settings;
+  }
   const availableLanguages = getAvailableLanguages(settings.availableLanguages, settings.defaultLanguage);
   const defaultLanguage = getFallbackLanguage(settings.defaultLanguage, availableLanguages);
   const explicitDefaultLanguage = normalizeLanguage(settings.defaultLanguage);
   const language = await detectLanguage({ availableLanguages, fallbackLanguage: defaultLanguage });
   const prefix = explicitDefaultLanguage && language === explicitDefaultLanguage ? "" : `/${language}`;
-  const { data: tours } = await fetchTours(
-    {
-      orderBy: "popularity",
-      orderDir: "DESC",
-      pageSize: 9,
-      lang: language,
-    },
-    { cacheTag: "home:tours" },
-  );
-  const { data: popularTours } = await fetchTours(
-    {
-      orderBy: "bookings_count",
-      orderDir: "DESC",
-      pageSize: 8,
-      lang: language,
-    },
-    { cacheTag: "home:popular" },
-  );
-  const { data: locations } = await fetchLocationsList({ lang: language });
+  let tours: any[] = [];
+  try {
+    const res = await fetchTours(
+      {
+        orderBy: "popularity",
+        orderDir: "DESC",
+        pageSize: 9,
+        lang: language,
+      },
+      { cacheTag: "home:tours" },
+    );
+    tours = res.data ?? [];
+  } catch (err: any) {
+    console.error("Home: fetchTours failed:", err?.message || err);
+    throw new Error(`Home fetch failed: fetchTours -> ${err?.message || String(err)}`);
+  }
+  let popularTours: any[] = [];
+  try {
+    const popRes = await fetchTours(
+      {
+        orderBy: "bookings_count",
+        orderDir: "DESC",
+        pageSize: 8,
+        lang: language,
+      },
+      { cacheTag: "home:popular" },
+    );
+    popularTours = popRes.data ?? [];
+  } catch (err: any) {
+    console.error("Home: fetchTours (popular) failed:", err?.message || err);
+    throw new Error(`Home fetch failed: fetchPopularTours -> ${err?.message || String(err)}`);
+  }
+  let locations: any[] = [];
+  try {
+    const locRes = await fetchLocationsList({ lang: language });
+    locations = locRes.data ?? [];
+  } catch (err: any) {
+    console.error("Home: fetchLocationsList failed:", err?.message || err);
+    throw new Error(`Home fetch failed: fetchLocationsList -> ${err?.message || String(err)}`);
+  }
   // También pedir sugerencias genéricas para obtener `countActivities` por ubicación/categoría
-  const suggestAll = await fetchSearchSuggestions({ query: "a", lang: language, limit: 50 });
+  let suggestAll: any = { locations: [], categories: [] };
+  try {
+    suggestAll = await fetchSearchSuggestions({ query: "a", lang: language, limit: 50 });
+  } catch (err: any) {
+    console.error("Home: fetchSearchSuggestions failed:", err?.message || err);
+    throw new Error(`Home fetch failed: fetchSearchSuggestions -> ${err?.message || String(err)}`);
+  }
   const suggestLocations = suggestAll.locations || [];
 
   // Obtener países y destinos desde locations
@@ -82,7 +112,15 @@ export default async function Home() {
     }));
 
   // Atracciones reales desde el endpoint profesional
-  const { data: attractions = [] } = await fetchAttractionsList({ lang: language, pageSize: 10 });
+  let attractions: any[] = [];
+  try {
+    const atRes = await fetchAttractionsList({ lang: language, pageSize: 10 });
+    attractions = atRes.data ?? [];
+  } catch (err: any) {
+    console.error("Home: fetchAttractionsList failed:", err?.message || err);
+    // non-fatal: continue with empty attractions
+    attractions = [];
+  }
   const attractionsTab = attractions.map((attr) => ({
     slug: attr.slug || String(attr.id),
     name: attr.translations?.[0]?.name || attr.slug || String(attr.id),
@@ -92,7 +130,13 @@ export default async function Home() {
   }));
 
   // Categorías reales desde /search/suggest (usando query genérica)
-  const suggest = await fetchSearchSuggestions({ query: "a", lang: language, limit: 10 });
+  let suggest: any = { categories: [] };
+  try {
+    suggest = await fetchSearchSuggestions({ query: "a", lang: language, limit: 10 });
+  } catch (err: any) {
+    console.error("Home: fetchSearchSuggestions (categories) failed:", err?.message || err);
+    suggest = { categories: [] };
+  }
   const categoriesTab = (suggest.categories || []).map((cat) => ({
     slug: cat.slug || String(cat.id),
     name: cat.name,
