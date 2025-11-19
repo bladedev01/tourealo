@@ -1,8 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { CalendarDays, Globe2, MapPin, ShieldCheck, Users } from "lucide-react";
+import { CalendarDays, Globe2, MapPin, ShieldCheck, Users, ShoppingCart } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/Button";
 import { useMemo } from "react";
+
 import { useTranslation } from "@/hooks/useTranslation";
 import { ToursGrid } from "@/components/tours/ToursGrid";
 import type { Attraction, AttractionTranslation } from "@/types/attraction";
@@ -44,6 +47,9 @@ export function AttractionDetailView({ attraction, translation, tours, language,
   const shortDescription = translation?.shortDescription || (attraction as any)?.shortDescription || null;
   const parentLocation = attraction.parentLocation?.name;
 
+
+
+
   const highlights = useMemo(
     () => [
       {
@@ -75,6 +81,7 @@ export function AttractionDetailView({ attraction, translation, tours, language,
   return (
     <div className="bg-white">
       <div className="mx-auto w-full max-w-6xl px-4 py-12">
+        {/* El selector de idioma local ha sido eliminado. El cambio de idioma debe ser global, como en tours. */}
         <nav className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
           <a href={prefix || "/"} className="transition hover:text-emerald-600">
             {t("breadcrumbs.home", "Inicio")}
@@ -92,6 +99,17 @@ export function AttractionDetailView({ attraction, translation, tours, language,
               </div>
             )}
             {shortDescription && <p className="mt-4 text-base text-slate-600">{shortDescription}</p>}
+              <div className="mt-6 flex items-center gap-3">
+                <Link href={`${prefix}/tours?attraction=${attraction.id}`}>
+                  <Button size="md" variant="primary">
+                    <span className="mr-2 inline-flex items-center"><ShoppingCart className="h-4 w-4" /></span>
+                    {t("cta.book", "View tours & book")}
+                  </Button>
+                </Link>
+                <a href={`mailto:contact@tourealo.dev?subject=Supplier%20info%20for%20${encodeURIComponent(title)}`} className="text-sm text-slate-600 hover:underline">
+                  {t("cta.contact", "Contact supplier")}
+                </a>
+              </div>
             {attraction.publicCode && (
               <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">
                 <span className="opacity-70">{t("publicCode", "Código")}</span>

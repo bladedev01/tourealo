@@ -19,7 +19,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [remember, setRemember] = useState(true);
 
-  const redirectTo = searchParams?.get("redirect") || "/dashboard";
+  // Support both `next` and legacy `redirect` query params. Prefer `next` when present.
+  const redirectTo = searchParams?.get("next") || searchParams?.get("redirect") || "/dashboard";
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -8,6 +8,7 @@ import { normalizeLanguage } from "@/lib/language-shared";
 import type { Location } from "@/types/location";
 import type { Tour } from "@/types/tour";
 import type { Settings } from "@/types/settings";
+import { getSiteOrigin } from "@/lib/env";
 
 const DEFAULT_METADATA: Metadata = {
 	title: "Destinos | Tourealo",
@@ -21,13 +22,11 @@ type PageProps = {
 
 function normalizeSlugCandidate(slug: string | undefined | null) {
 	if (typeof slug !== "string") return "";
-	return slug.replace(/-L([A-Za-z0-9]+)$/g, "-l$1");
+	return slug;
 }
 
 function buildCanonicalSlug(location: Location, fallbackSlug: string) {
-	if (location.slug && location.publicCode) {
-		return `${location.slug}-l${location.publicCode}`;
-	}
+	// El backend es la única fuente de verdad para el slug
 	return location.slug || fallbackSlug;
 }
 
@@ -35,12 +34,10 @@ function parseLocationName(location: Location, fallbackSlug: string) {
 	if (location.name && location.name.trim().length > 0) {
 		return location.name;
 	}
-	return fallbackSlug.replace(/-l[A-Za-z0-9]+$/, "").replace(/-/g, " ").replace(/\s+/g, " ").trim();
+	// Solo convierte el slug a texto legible, sin quitar sufijos especiales
+	return fallbackSlug.replace(/-/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function getSiteOrigin() {
-	return process.env.NEXT_PUBLIC_SITE_URL || "https://tourealo.dev";
-}
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
 	const params = await props.params;
@@ -110,16 +107,11 @@ export default async function LocationPage(props: PageProps) {
 	const language = await detectLanguage({ requestedLanguage: searchParams.lang, availableLanguages, fallbackLanguage });
 	const prefix = explicitDefaultLanguage && language === explicitDefaultLanguage ? "" : `/${language}`;
 
-	// Always extract canonical slug for API
+	// Usar el slug tal como viene del backend, sin manipular ni construir con prefijos
 	const slugParam = params.slug;
-	// If slug is not canonical, try to find canonical
 	let location: Location | null = null;
-	let canonicalSlug = slugParam;
 	try {
 		location = await fetchLocationBySlug(slugParam);
-		if (location && location.slug && location.publicCode) {
-			canonicalSlug = `${location.slug}-l${location.publicCode}`;
-		}
 	} catch (error) {
 		console.warn("Failed to load location", error);
 	}
@@ -128,8 +120,9 @@ export default async function LocationPage(props: PageProps) {
 		notFound();
 	}
 
-	// Redirect to canonical slug if needed
-	if (canonicalSlug && canonicalSlug.toLowerCase() !== slugParam.toLowerCase()) {
+	// Construir slug canónico: [slug]-[publicCode]
+	const canonicalSlug = `${location.slug}-${location.publicCode}`;
+	if (canonicalSlug.toLowerCase() !== slugParam.toLowerCase()) {
 		redirect(`${prefix}/${canonicalSlug}`);
 	}
 

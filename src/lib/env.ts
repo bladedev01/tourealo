@@ -1,3 +1,10 @@
+export function getSiteOrigin(): string {
+  // Usa la variable pública configurada en entorno para construir URLs canónicas
+  // Fallback para entorno de desarrollo si no está definida
+  return process.env.NEXT_PUBLIC_SITE_URL || "https://tourealo.dev";
+}
+
+export default getSiteOrigin;
 const SERVER_API_BASE = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // Determine the public API base in a tolerant way so builds don't fail

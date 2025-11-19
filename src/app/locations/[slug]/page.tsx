@@ -8,6 +8,7 @@ import { normalizeLanguage } from "@/lib/language-shared";
 import type { Location } from "@/types/location";
 import type { Tour } from "@/types/tour";
 import type { Settings } from "@/types/settings";
+import { getSiteOrigin } from "@/lib/env";
 
 const DEFAULT_METADATA: Metadata = {
   title: "Destinos | Tourealo",
@@ -21,13 +22,11 @@ type PageProps = {
 
 function normalizeSlugCandidate(slug: string | undefined | null) {
   if (typeof slug !== "string") return "";
-  return slug.replace(/-L([A-Za-z0-9]+)$/g, "-l$1");
+  return slug;
 }
 
 function buildCanonicalSlug(location: Location, fallbackSlug: string) {
-  if (location.slug && location.publicCode) {
-    return `${location.slug}-l${location.publicCode}`;
-  }
+  // El backend ya entrega el slug canónico (con publicCode y prefijo si corresponde)
   return location.slug || fallbackSlug;
 }
 
@@ -38,9 +37,6 @@ function parseLocationName(location: Location, fallbackSlug: string) {
   return fallbackSlug.replace(/-l[A-Za-z0-9]+$/, "").replace(/-/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function getSiteOrigin() {
-  return process.env.NEXT_PUBLIC_SITE_URL || "https://tourealo.dev";
-}
 
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const settings = await getCachedSettings().catch<Settings>(() => ({

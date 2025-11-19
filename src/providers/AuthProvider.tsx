@@ -37,10 +37,33 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children, initialUser }: { children: React.ReactNode; initialUser?: User }) {
-  // Avoid reading storage during initial render to prevent SSR hydration mismatches.
-  // Bootstrap of stored session happens in the effect below.
-  const [user, setUser] = useState<User>(() => initialUser ?? null);
-  const [loading, setLoading] = useState<boolean>(true);
+  // Initialize user synchronously on the client from stored session so the
+  // UI (header / layouts) can render the correct state immediately and
+  // avoid flashes before the client effect runs.
+  const [user, setUser] = useState<User>(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const session = loadStoredSession();
+        return session?.user ?? initialUser ?? null;
+      }
+    } catch (err) {
+      // ignore read errors and fall back to initialUser
+    }
+    return initialUser ?? null;
+  });
+
+  // Only show a loading state when we have a token that needs refreshing.
+  const [loading, setLoading] = useState<boolean>(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const session = loadStoredSession();
+        return Boolean(session?.token);
+      }
+    } catch (err) {
+      // if reading fails, be conservative and set loading to false
+    }
+    return false;
+  });
 
   const refresh = useCallback(async () => {
     if (!hasStoredSession()) {
@@ -75,6 +98,9 @@ export function AuthProvider({ children, initialUser }: { children: React.ReactN
         }
         return;
       }
+      // Bootstrap from stored session (localStorage token) to avoid
+      // relying on server-side cookies. This keeps behavior consistent
+      // with the original auth flow and avoids cookie-based assumptions.
       const session = loadStoredSession();
       if (process.env.NODE_ENV !== "production") {
         // helpful debug while troubleshooting cookie/token-based sessions
@@ -87,38 +113,10 @@ export function AuthProvider({ children, initialUser }: { children: React.ReactN
       if (session.token) {
         // token-based session: refresh user from API
         await refresh();
-      } else {
-        // No stored token — attempt to detect cookie-based session by calling fetchMe()
-        // This allows servers that use HttpOnly session cookies to keep the user logged in
-        try {
-          // call fetchMe to detect cookie session
-          const me = await fetchMe();
-          if (process.env.NODE_ENV !== "production") {
-            // eslint-disable-next-line no-console
-            console.debug("[AuthProvider] fetchMe result", { me });
-          }
-          if (me) {
-            if (active) {
-              setUser(me);
-              // persist user locally so UI can bootstrap next time
-              storeAuthSession({ user: me });
-              storeUserProfile(me);
-            }
-          } else if (!session.user) {
-            // no cookie session and no stored user -> clear any partial storage
-            clearAuthStorage();
-            setUser(null);
-          }
-        } catch (err) {
-          if (process.env.NODE_ENV !== "production") {
-            // eslint-disable-next-line no-console
-            console.debug("[AuthProvider] fetchMe error", err);
-          }
-          if (!session.user) {
-            clearAuthStorage();
-            setUser(null);
-          }
-        }
+      } else if (!session.user) {
+        // no cookie session and no stored user -> clear any partial storage
+        clearAuthStorage();
+        setUser(null);
       }
       if (active) {
         setLoading(false);

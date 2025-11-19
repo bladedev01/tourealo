@@ -237,7 +237,7 @@ export function VoucherView({ code }: VoucherViewProps) {
                 )}
               </div>
               <div className="flex-1">
-                <h1 className="text-2xl font-semibold text-slate-900">{booking.tour?.name || booking.productTitle || t("details.title", "Reserva")}</h1>
+                <h1 className="text-2xl font-semibold text-slate-900">{tourTranslation?.title || booking.tour?.name || booking.productTitle || t("details.title", "Reserva")}</h1>
                 <div className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${statusBadge.className}`}>
                   {statusBadge.label}
                 </div>

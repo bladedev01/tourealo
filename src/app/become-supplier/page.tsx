@@ -1,52 +1,72 @@
 import Link from "next/link";
+import { Briefcase, Users, ShieldCheck, Mail } from "lucide-react";
 
 export default function Page() {
   return (
-    <main className="mx-auto max-w-4xl px-6 py-16">
-      <h1 className="mb-4 text-3xl font-bold">Become a supplier</h1>
-      <p className="mb-6 text-slate-700">
-        Join Tourealo as a supplier and grow your business by reaching guests worldwide. We provide a
-        professional platform, marketing reach, flexible payout options, and tools to manage your
-        tours and availability.
-      </p>
+    <main className="mx-auto max-w-5xl px-6 py-16">
+      <header className="mb-8 text-center">
+        <h1 className="mb-3 text-4xl font-bold">Partner with Tourealo</h1>
+        <p className="mx-auto max-w-2xl text-slate-700">Grow your business with our trusted marketplace — professional onboarding, marketing reach and reliable payouts.</p>
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <Link href="/register?role=supplier" className="rounded-md bg-emerald-600 px-5 py-3 text-white hover:bg-emerald-700">
+            Create supplier account
+          </Link>
+          <Link href="/contact" className="text-sm text-slate-600 hover:underline">
+            Contact sales
+          </Link>
+        </div>
+      </header>
 
-      <section className="mb-8 rounded-lg border border-slate-100 bg-white p-6 shadow-sm">
-        <h2 className="mb-3 text-xl font-semibold">Why list with Tourealo?</h2>
-        <ul className="space-y-3 text-slate-700">
-          <li>
-            <strong>Global visibility:</strong> your tours shown to travelers across multiple
-            countries and languages.
-          </li>
-          <li>
-            <strong>Instant bookings:</strong> real-time availability and instant confirmation to
-            increase conversions.
-          </li>
-          <li>
-            <strong>Secure payouts:</strong> multiple payout options with clear fee and payout
-            reporting.
-          </li>
-          <li>
-            <strong>Supplier dashboard:</strong> manage tours, schedules, bookings, and customer
-            communication from one place.
-          </li>
-          <li>
-            <strong>Support & trust:</strong> verification flows, insurance options, and supplier
-            support to help you deliver a professional experience.
-          </li>
-        </ul>
+      <section className="mb-12 grid gap-6 sm:grid-cols-2">
+        <div className="rounded-lg border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <Briefcase className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="text-lg font-semibold">Professional tools</h3>
+              <p className="text-sm text-slate-700">Manage tours, availability and bookings with an easy-to-use dashboard.</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <Users className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="text-lg font-semibold">Global reach</h3>
+              <p className="text-sm text-slate-700">Show your tours to travelers across multiple countries and languages.</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <ShieldCheck className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="text-lg font-semibold">Trust & support</h3>
+              <p className="text-sm text-slate-700">Verification flows and supplier support to help you deliver a professional experience.</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <Mail className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="text-lg font-semibold">Dedicated onboarding</h3>
+              <p className="text-sm text-slate-700">We help with photos, descriptions and campaigns to maximize visibility.</p>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section className="mb-8">
-        <h2 className="mb-3 text-xl font-semibold">What we ask from suppliers</h2>
-        <p className="text-slate-700">
-          We expect high quality listings with clear descriptions, accurate availability and fair
-          pricing. Suppliers should follow local regulations and provide reliable customer service.
-        </p>
-      </section>
-
-      <section className="mb-8 rounded-lg border border-slate-100 bg-white p-6 shadow-sm">
-        <h2 className="mb-3 text-xl font-semibold">Get started</h2>
-        <p className="mb-4 text-slate-700">Ready to list your tours? Create an account and follow our onboarding flow.</p>
+      <section className="text-sm text-slate-500">
+        <h3 className="mb-2 font-semibold">Ready to start?</h3>
+        <p className="mb-4">Create a supplier account and follow our onboarding flow. We’ll be in touch to help you publish professional listings.</p>
         <div className="flex items-center gap-3">
           <Link href="/register?role=supplier" className="rounded-md bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700">
             Create supplier account
@@ -55,15 +75,6 @@ export default function Page() {
             Contact sales
           </Link>
         </div>
-      </section>
-
-      <section className="text-sm text-slate-500">
-        <h3 className="mb-2 font-semibold">Need a professional onboarding?</h3>
-        <p>
-          We can help you set up your catalogue, professional photos and optimized descriptions.
-          Contact our supplier success team to learn more about tailored services and promotional
-          campaigns.
-        </p>
       </section>
     </main>
   );

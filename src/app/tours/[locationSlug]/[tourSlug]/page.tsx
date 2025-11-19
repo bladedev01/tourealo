@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import TourGallery from "@/components/tour/TourGallery";
@@ -13,7 +13,9 @@ import { Button } from "@/components/ui/Button";
 import { detectLanguage, getAvailableLanguages, getFallbackLanguage } from "@/lib/language-server";
 import { normalizeLanguage } from "@/lib/language-shared";
 import { getCachedSettings } from "@/services/settings-cache";
+import { getSiteOrigin } from "@/lib/env";
 import type { Settings } from "@/types/settings";
+
 
 function pickValue(map: Record<string, string> | undefined, language: string, fallbackLang = "en") {
   if (!map) return "";
@@ -36,7 +38,8 @@ async function loadTour(locationSlug: string, tourSlug: string, lang: string) {
     return await fetchTourDetail({ locationSlug, titleSlug: tourSlug, lang });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    if (message.includes("404")) {
+    const status = (error as any)?.status;
+    if (status === 404 || message.includes("404") || /not found/i.test(message)) {
       notFound();
     }
     throw error;
@@ -70,6 +73,26 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   const title = pickValue(translations.name, lang) || tour.name || tour.title || "Detalle del tour";
   const description = pickValue(translations.shortDescription, lang) || tour.shortDescription || tour.description || "Explora esta experiencia";
   const image = buildGallery(tour)[0];
+  // Build canonical URL and alternates (hreflang)
+  const resolvedLocation = Array.isArray(tour.locations) && tour.locations.length
+    ? (tour.locations.find((l) => (l as any).type === "city") || tour.locations[0])
+    : tour.location;
+  const canonicalLocationSlug = `${resolvedLocation?.slug || resolvedParams.locationSlug}${resolvedLocation?.publicCode ? `-${resolvedLocation.publicCode}` : ""}`;
+  const mainSlug = pickValue(translations.slug, lang) || tour.slug || resolvedParams.tourSlug.split('-').slice(0, -1).join('-');
+  const canonicalTourSlug = `${mainSlug}-${tour.publicCode}`;
+  const explicitDefaultLanguage = normalizeLanguage((await getCachedSettings().catch<Settings>(() => ({ availableLanguages: [], defaultLanguage: "" }))).defaultLanguage);
+  const prefix = explicitDefaultLanguage && lang === explicitDefaultLanguage ? "" : `/${lang}`;
+  const canonicalUrl = `${getSiteOrigin()}${prefix}/tours/${canonicalLocationSlug}/${canonicalTourSlug}`;
+
+  // alternates.languages for hreflang
+  const settings = await getCachedSettings().catch<Settings>(() => ({ availableLanguages: [], defaultLanguage: "" }));
+  const availableLanguages = getAvailableLanguages(settings.availableLanguages, settings.defaultLanguage);
+  const alternatesLanguages: Record<string, string> = {};
+  for (const aLang of availableLanguages) {
+    const slugForLang = pickValue(translations.slug, aLang) || mainSlug;
+    const prefixForLang = explicitDefaultLanguage && aLang === explicitDefaultLanguage ? "" : `/${aLang}`;
+    alternatesLanguages[aLang] = `${getSiteOrigin()}${prefixForLang}/tours/${canonicalLocationSlug}/${slugForLang}-${tour.publicCode}`;
+  }
   return {
     title,
     description,
@@ -77,6 +100,7 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
       title,
       description,
       images: image ? [image] : undefined,
+      url: canonicalUrl,
     },
     twitter: {
       card: "summary_large_image",
@@ -84,6 +108,7 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
       description,
       images: image ? [image] : undefined,
     },
+    alternates: { canonical: canonicalUrl, languages: alternatesLanguages },
   };
 }
 
@@ -93,25 +118,57 @@ export default async function TourDetailPage({ params, searchParams }: { params:
   const { language: lang, defaultLanguage } = await resolveLanguageOptions(resolvedSearchParams.lang);
   const prefix = defaultLanguage && lang === defaultLanguage ? "" : `/${lang}`;
   const tour = await loadTour(resolvedParams.locationSlug, resolvedParams.tourSlug, lang);
+  // Construir slugs canónicos (preferir ciudad si existe)
+  const resolvedLocation = Array.isArray(tour.locations) && tour.locations.length
+    ? (tour.locations.find((l) => (l as any).type === "city") || tour.locations[0])
+    : tour.location;
+  const canonicalLocationSlug = `${resolvedLocation?.slug || resolvedParams.locationSlug}${resolvedLocation?.publicCode ? `-${resolvedLocation.publicCode}` : ""}`;
+  // Definir translations antes de usarla
   const translations = (tour.translations ?? {}) as Record<string, Record<string, string>>;
   const title = pickValue(translations.name, lang) || tour.name || tour.title || "";
-  const shortDescription = pickValue(translations.shortDescription, lang) || tour.shortDescription || "";
+  const shortDescription = pickValue(translations.shortDescription, lang) || tour.shortDescription || tour.description || "";
   const longDescription = pickValue(translations.longDescription, lang) || tour.longDescription || tour.description || "";
-  const highlightsRaw = pickValue(translations.highlights, lang);
-  const includedRaw = pickValue(translations.included, lang);
-  const notIncludedRaw = pickValue(translations.notIncluded, lang);
+  const mainSlug = pickValue(translations.slug, lang) || tour.slug || resolvedParams.tourSlug.split('-').slice(0, -1).join('-');
+  const canonicalTourSlug = `${mainSlug}-${tour.publicCode}`;
+  // Redirigir si la URL no es canónica
+  if (
+    canonicalLocationSlug.toLowerCase() !== resolvedParams.locationSlug.toLowerCase() ||
+    canonicalTourSlug.toLowerCase() !== resolvedParams.tourSlug.toLowerCase()
+  ) {
+    redirect(`${prefix}/tours/${canonicalLocationSlug}/${canonicalTourSlug}`);
+  }
+  const canonicalUrl = `${getSiteOrigin()}${prefix}/tours/${canonicalLocationSlug}/${canonicalTourSlug}`;
   const gallery = buildGallery(tour);
+  const currency = (tour.currency || "USD").toUpperCase();
+  const basePrice = Number(tour.basePrice ?? tour.price ?? 0);
+  // JSON-LD structured data
+  const ld: any = {
+    "@context": "https://schema.org",
+    "@type": "TouristTrip",
+    name: title,
+    description: shortDescription,
+    image: gallery.length ? gallery : undefined,
+    url: canonicalUrl,
+    offers: {
+      "@type": "Offer",
+      url: canonicalUrl,
+      price: basePrice > 0 ? basePrice : undefined,
+      priceCurrency: basePrice > 0 ? currency : undefined,
+      availability: basePrice > 0 ? "https://schema.org/InStock" : undefined,
+    },
+  };
+  const notIncludedRaw = pickValue(translations.notIncluded, lang);
   const locationName = Array.isArray(tour.locations) && tour.locations.length
     ? tour.locations.find((loc) => loc.type === "city")?.name || tour.locations[0]?.name
     : tour.location?.name;
-
-  const currency = (tour.currency || "USD").toUpperCase();
-  const basePrice = Number(tour.basePrice ?? tour.price ?? 0);
   const priceLabel = basePrice > 0 ? `${basePrice.toLocaleString(lang)} ${currency}` : null;
   const durationLabel = typeof tour.duration === "string" ? tour.duration : tour.duration ? `${tour.duration} min` : null;
 
   const cancellation = tour.cancellationPolicy;
   const cancellationLabel = cancellation?.summary || cancellation?.shortMessage || cancellation?.title;
+
+  const highlightsRaw = pickValue(translations.highlights, lang);
+  const includedRaw = pickValue(translations.included, lang);
 
   const highlights = highlightsRaw ? highlightsRaw.split(/\r?\n/).filter(Boolean) : [];
   const included = includedRaw ? includedRaw.split(/\r?\n/).filter(Boolean) : [];
@@ -119,6 +176,7 @@ export default async function TourDetailPage({ params, searchParams }: { params:
 
   return (
     <div className="bg-white pb-20">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
       <div className="bg-gradient-to-b from-emerald-50 to-white">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-12 sm:py-16">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">

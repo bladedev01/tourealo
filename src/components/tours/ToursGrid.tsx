@@ -9,12 +9,12 @@ export function ToursGrid({ tours, language }: { tours: Tour[]; language: string
       </p>
     );
   }
-
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="mx-auto w-full grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
       {tours.map((tour) => (
         <TourCard key={String(tour.id)} tour={tour} language={language} />
       ))}
     </div>
   );
 }
+

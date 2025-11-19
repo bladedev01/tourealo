@@ -82,18 +82,15 @@ function buildLocationPath(location: LocationSelection | null, fallbackLabel: st
     const fallbackSlug = slugify(fallbackLabel);
     return fallbackSlug ? `/${fallbackSlug}` : "/";
   }
-  const baseSlug = location.slug && location.slug.length > 0 ? location.slug : slugify(location.title);
-  const slugWithCode = location.publicCode ? `${baseSlug}-l${location.publicCode}` : baseSlug;
-  return `/${slugWithCode}`;
+  // Usar el slug tal como viene del backend (ya debe ser canónico)
+  const canonicalSlug = location.slug || slugify(location.title);
+  return `/${canonicalSlug}`;
 }
 
 function buildTourPath(tour: TourSuggestion) {
-  const locationSlug = tour.locationSlug ? String(tour.locationSlug) : undefined;
-  const locationCode = tour.locationCode ? String(tour.locationCode) : undefined;
-  const titleSlug = tour.titleSlug ? String(tour.titleSlug) : undefined;
-  const tourCode = tour.tourCode ? String(tour.tourCode) : undefined;
-  if (locationSlug && locationCode && titleSlug && tourCode) {
-    return `/tours/${locationSlug}-l${locationCode}/${titleSlug}-t${tourCode}`;
+  // El backend debe entregar los slugs canónicos completos
+  if (tour.locationSlug && tour.titleSlug) {
+    return `/tours/${tour.locationSlug}/${tour.titleSlug}`;
   }
   return "/tours";
 }
@@ -360,9 +357,11 @@ export function HeroSearch() {
     }
 
     if (suggestion.type === "attraction") {
-      const slug = suggestion.slug ? String(suggestion.slug) : slugify(suggestion.title);
-      const withCode = suggestion.publicCode ? `${slug}-a${suggestion.publicCode}` : slug;
-      router.push(applyPrefix(`/attractions/${withCode}`));
+      // Construir slug canónico con publicCode: [slug]-[publicCode]
+      const base = suggestion.slug ? String(suggestion.slug) : slugify(suggestion.title);
+      const code = suggestion.publicCode ? String(suggestion.publicCode) : null;
+      const canonicalSlug = code ? `${base}-${code}` : base;
+      router.push(applyPrefix(`/attractions/${canonicalSlug}`));
     }
   };
 

@@ -1,5 +1,4 @@
 "use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { useContext } from "react";
@@ -15,13 +14,11 @@ export function TourCard({ tour, language }: { tour: Tour; language: string }) {
   const prefix = defaultLanguage && language === defaultLanguage ? "" : `/${language}`;
   const href = prefix ? `${prefix}${display.href}` : display.href;
 
-  if (!display.href) {
-    return null;
-  }
+  if (!display.href) return null;
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-  <Link href={href} className="relative block aspect-[4/2.7] w-full overflow-hidden min-h-[140px]">
+    <article className="w-full min-w-0 flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+      <Link href={href} className="relative block aspect-[4/2.7] w-full overflow-hidden min-h-[140px]">
         <Image
           src={display.imageUrl}
           alt={display.title || "Tour"}
@@ -32,12 +29,12 @@ export function TourCard({ tour, language }: { tour: Tour; language: string }) {
           unoptimized
         />
         {display.isFeatured && (
-          <span className="absolute left-2 top-2 rounded-full bg-amber-400/90 px-2 py-0.5 text-[10px] font-semibold text-amber-900 shadow">
+          <span className="absolute left-2 top-2 rounded-full bg-amber-400/90 px-3 py-1 text-[12px] font-semibold text-amber-900 shadow">
             Destacado
           </span>
         )}
         {display.priceLabel && (
-          <span className="absolute bottom-2 right-2 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-emerald-700 shadow">
+          <span className="absolute bottom-2 right-2 rounded-full bg-white/95 px-3 py-1 text-sm font-bold text-emerald-700 shadow">
             {display.priceLabel}
           </span>
         )}
@@ -95,6 +92,6 @@ export function TourCard({ tour, language }: { tour: Tour; language: string }) {
           Ver detalles
         </Button>
       </div>
-    </article>
+      </article>
   );
 }

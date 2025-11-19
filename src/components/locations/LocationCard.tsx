@@ -8,7 +8,8 @@ export type LocationCardProps = {
 };
 
 export function LocationCard({ location, hrefPrefix = "" }: LocationCardProps) {
-  const canonicalSlug = location.slug && location.publicCode ? `${location.slug}-l${location.publicCode}` : location.slug || "";
+  // Construir slug canónico: [slug]-[publicCode]
+  const canonicalSlug = location.slug && location.publicCode ? `${location.slug}-${location.publicCode}` : location.slug || "";
   return (
     <Link
       key={location.id}

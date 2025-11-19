@@ -69,23 +69,25 @@ export function buildTourDisplay(tour: Tour, language: string) {
     "";
 
   const { city, country, base } = pickLocation(tour);
-  const locationSlugRaw = base?.slug || "";
-  const locationCode = base?.publicCode || "";
-  const locationSlug = locationCode ? `${locationSlugRaw}-l${locationCode}` : locationSlugRaw;
+  // Construir slugs canónicos: [slug]-[publicCode]
+  const locationSlug = base?.slug && base?.publicCode ? `${base.slug}-${base.publicCode}` : base?.slug || "";
   const titleSlug = (() => {
+    let slug = "";
     if (Array.isArray(tour.translations)) {
       const tr = tour.translations.find((item) => item?.lang === language && item?.slug);
-      if (tr?.slug) return tr.slug;
-      const enTr = tour.translations.find((item) => item?.lang === "en" && item?.slug);
-      if (enTr?.slug) return enTr.slug;
-      return tour.translations[0]?.slug || tour.slug || "";
+      if (tr?.slug) slug = tr.slug;
+      else {
+        const enTr = tour.translations.find((item) => item?.lang === "en" && item?.slug);
+        if (enTr?.slug) slug = enTr.slug;
+        else slug = tour.translations[0]?.slug || tour.slug || "";
+      }
+    } else if (translationMap?.slug) {
+      slug = translationMap.slug[language] || translationMap.slug.en || tour.slug || "";
+    } else {
+      slug = tour.slug || "";
     }
-    if (translationMap?.slug) {
-      return translationMap.slug[language] || translationMap.slug.en || tour.slug || "";
-    }
-    return tour.slug || "";
+    return slug && tour.publicCode ? `${slug}-${tour.publicCode}` : slug;
   })();
-
   const imageUrl =
     tour.coverImageUrl ||
     tour.image ||
@@ -165,9 +167,7 @@ export function buildTourDisplay(tour: Tour, language: string) {
 
   const isFeatured = Boolean(tour.isFeatured);
 
-  // Migración fiel: usar solo slugs puros como en frontend clásico
-  const tourPart = tour.publicCode ? `${titleSlug}-t${tour.publicCode}` : titleSlug;
-  const href = locationSlug && titleSlug ? `/tours/${locationSlug}/${tourPart}` : `/tours/${tour.id}`;
+  const href = locationSlug && titleSlug ? `/tours/${locationSlug}/${titleSlug}` : `/tours/${tour.id}`;
 
   return {
     tour,

@@ -1,4 +1,6 @@
+
 "use client";
+import { buildTourDisplay } from "@/lib/tour-utils";
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -93,6 +95,7 @@ export default function DashboardPage() {
   const wishlistCount = useMemo(() => Number((user as any)?.stats?.wishlist) || 0, [user]);
   const reviewsCount = useMemo(() => Number((user as any)?.stats?.reviews) || 0, [user]);
 
+  // Solo mostrar las 2 próximas reservas en el resumen
   const upcomingBookings = useMemo(
     () =>
       bookings
@@ -102,7 +105,7 @@ export default function DashboardPage() {
           const dateB = extractDate(b);
           return (dateA ? new Date(dateA).getTime() : 0) - (dateB ? new Date(dateB).getTime() : 0);
         })
-        .slice(0, 4),
+        .slice(0, 2),
     [bookings],
   );
 
@@ -114,7 +117,7 @@ export default function DashboardPage() {
 
   if (loading && !user) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center bg-slate-50">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
           <span className="h-2 w-2 animate-ping rounded-full bg-emerald-500" aria-hidden />
           {t("loading", "Cargando tu panel de control...")}
@@ -157,26 +160,9 @@ export default function DashboardPage() {
     },
   ];
 
-  
-  if (loading && !user) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center bg-slate-50">
-        <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
-          <span className="h-2 w-2 animate-ping rounded-full bg-emerald-500" aria-hidden />
-          {t("loading", "Cargando tu panel de control...")}
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50 py-12">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 sm:px-6 lg:px-8">
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-sky-500 text-white shadow-xl">
+    <div className="flex flex-col gap-8">
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-sky-500 text-white shadow-xl">
           <div className="absolute inset-0 opacity-20" aria-hidden>
             <div className="h-full w-full bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.4)_0,_transparent_60%)]" />
           </div>
@@ -230,63 +216,88 @@ export default function DashboardPage() {
                 {noUpcomingText}
               </div>
             ) : (
-              <div className="space-y-4">
-                {upcomingBookings.map((booking) => {
-                  const dateText = formatDate(extractDate(booking));
-                  const createdAtText = applyTemplate(t("createdAt", "Reservado el {date}"), {
-                    date: formatDate(booking.createdAt),
-                  });
-                  const status = String(booking.status || "").toLowerCase();
-                  const badgeColor =
-                    status === "confirmed"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : status === "pending"
-                        ? "bg-amber-100 text-amber-700"
-                        : status === "cancelled"
-                          ? "bg-rose-100 text-rose-700"
-                          : "bg-slate-100 text-slate-600";
-                  return (
-                    <article key={booking.id} className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{t("bookingCode", "Reserva")}</p>
-                          <h3 className="text-lg font-semibold text-slate-900">#{booking.code || booking.id}</h3>
+              <>
+                <div className="space-y-4">
+                  {upcomingBookings.map((booking) => {
+                    const dateText = formatDate(extractDate(booking));
+                    const createdAtText = applyTemplate(t("createdAt", "Reservado el {date}"), {
+                      date: formatDate(booking.createdAt),
+                    });
+                    const status = String(booking.status || "").toLowerCase();
+                    const badgeColor =
+                      status === "confirmed"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : status === "pending"
+                          ? "bg-amber-100 text-amber-700"
+                          : status === "cancelled"
+                            ? "bg-rose-100 text-rose-700"
+                            : "bg-slate-100 text-slate-600";
+                    const display = buildTourDisplay(booking.tour || {}, (user?.language || "es"));
+                    const imageSrc = booking.tour?.coverImageUrl || (booking as { coverImageUrl?: string }).coverImageUrl || "https://via.placeholder.com/128x128?text=Tour";
+                    return (
+                      <article key={booking.id} className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="flex items-center gap-4">
+                          <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 flex-shrink-0">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={imageSrc}
+                              alt={display.title || t("untitledTour", "Tour sin título")}
+                              className="object-cover h-16 w-16"
+                              width={64}
+                              height={64}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{t("bookingCode", "Reserva")}</p>
+                            <h3 className="text-lg font-semibold text-slate-900 truncate">
+                              {display.title || t("untitledTour", "Tour sin título")}
+                            </h3>
+                            <span className="text-xs text-slate-500">#{booking.code || booking.id}</span>
+                          </div>
+                          <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${badgeColor}`}>
+                            {status ? status.charAt(0).toUpperCase() + status.slice(1) : t("status.unknown", "Estado desconocido")}
+                          </span>
                         </div>
-                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${badgeColor}`}>
-                          {status ? status.charAt(0).toUpperCase() + status.slice(1) : t("status.unknown", "Estado desconocido")}
-                        </span>
-                      </div>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="flex items-center gap-3 text-sm text-slate-600">
-                          <CalendarDays className="h-5 w-5 text-emerald-500" />
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{t("when", "Cuándo")}</p>
-                            <p className="font-medium text-slate-800">{dateText}</p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="flex items-center gap-3 text-sm text-slate-600">
+                            <CalendarDays className="h-5 w-5 text-emerald-500" />
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{t("when", "Cuándo")}</p>
+                              <p className="font-medium text-slate-800">{dateText}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm text-slate-600">
+                            <MapPin className="h-5 w-5 text-sky-500" />
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{t("experience", "Experiencia")}</p>
+                              <p className="font-medium text-slate-800">{display.shortDescription || display.title || t("untitledTour", "Tour sin título")}</p>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 text-sm text-slate-600">
-                          <MapPin className="h-5 w-5 text-sky-500" />
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{t("experience", "Experiencia")}</p>
-                            <p className="font-medium text-slate-800">{booking.tour?.name || t("untitledTour", "Tour sin título")}</p>
-                          </div>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                          <Clock className="h-4 w-4" />
+                          {createdAtText}
+                          <span className="mx-2 h-1 w-1 rounded-full bg-slate-300" aria-hidden />
+                          <span>
+                            {applyTemplate(t("party", "Adultos: {adults} • Niños: {children}"), {
+                              adults: booking.adults ?? 0,
+                              children: booking.children ?? 0,
+                            })}
+                          </span>
                         </div>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                        <Clock className="h-4 w-4" />
-                        {createdAtText}
-                        <span className="mx-2 h-1 w-1 rounded-full bg-slate-300" aria-hidden />
-                        <span>
-                          {applyTemplate(t("party", "Adultos: {adults} • Niños: {children}"), {
-                            adults: booking.adults ?? 0,
-                            children: booking.children ?? 0,
-                          })}
-                        </span>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+                      </article>
+                    );
+                  })}
+                </div>
+                <div className="pt-4 text-center">
+                  <button
+                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                    onClick={() => router.push("/dashboard/bookings")}
+                  >
+                    {t("seeAllBookings", "Ver todas las reservas")}
+                  </button>
+                </div>
+              </>
             )}
           </section>
           <aside className="space-y-6">
@@ -316,6 +327,5 @@ export default function DashboardPage() {
           </aside>
         </div>
       </div>
-    </div>
   );
 }

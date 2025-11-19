@@ -5,6 +5,7 @@ import { fetchAttractionBySlug, fetchAttractionTours } from "@/services/attracti
 import { getCachedSettings } from "@/services/settings-cache";
 import { detectLanguage, getAvailableLanguages, getFallbackLanguage } from "@/lib/language-server";
 import { normalizeLanguage } from "@/lib/language-shared";
+import { getSiteOrigin } from "@/lib/env";
 import type { Attraction, AttractionTranslation } from "@/types/attraction";
 import type { Tour } from "@/types/tour";
 import type { Settings } from "@/types/settings";
@@ -32,19 +33,14 @@ function selectTranslation(attraction: Attraction, language: string, fallbackLan
 }
 
 function buildCanonicalSlug(attraction: Attraction, translation: AttractionTranslation | null, fallbackSlug: string): string {
-  const base = translation?.slug || attraction.slug || fallbackSlug;
-  if (!base) return fallbackSlug;
-  if (attraction.publicCode) {
-    return `${base}-a${attraction.publicCode}`;
-  }
-  return base;
+  // El backend ya entrega el slug canónico (con publicCode y prefijo si corresponde)
+  return attraction.slug || fallbackSlug;
 }
 
-function getSiteOrigin() {
-  return process.env.NEXT_PUBLIC_SITE_URL || "https://tourealo.dev";
-}
 
-export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: { params: Promise<any>, searchParams: Promise<any> }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
   const settings = await getCachedSettings().catch<Settings>(() => ({
     appName: "Tourealo",
     availableLanguages: [],
@@ -52,35 +48,44 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const availableLanguages = getAvailableLanguages(settings.availableLanguages, settings.defaultLanguage);
   const fallbackLanguage = getFallbackLanguage(settings.defaultLanguage, availableLanguages);
   const explicitDefaultLanguage = normalizeLanguage(settings.defaultLanguage);
-  const language = await detectLanguage({ requestedLanguage: searchParams.lang, availableLanguages, fallbackLanguage });
+  const language = await detectLanguage({ requestedLanguage: resolvedSearchParams.lang, availableLanguages, fallbackLanguage });
 
   try {
-    const attraction = await fetchAttractionBySlug(params.slug, { lang: language });
+    const attraction = await fetchAttractionBySlug(resolvedParams.slug, { lang: language });
     if (!attraction) {
       return DEFAULT_METADATA;
     }
     const translation = selectTranslation(attraction, language, fallbackLanguage);
     const brand = settings.appName || "Tourealo";
-    const title = translation?.name || attraction.slug || brand;
-    const description = translation?.shortDescription || `Explora ${title} con experiencias curadas por ${brand}.`;
-    const canonicalSlug = buildCanonicalSlug(attraction, translation, params.slug);
+    const rawName = translation?.name || attraction.slug || brand;
+    const locationName = attraction.parentLocation?.name;
+    const metaName = locationName ? `${rawName} en ${locationName}` : rawName;
+    const metaTitle = `${metaName} | ${brand}`;
+
+    // Build description: prefer translated shortDescription but ensure it mentions the location
+    let description = translation?.shortDescription ?? `Descubre ${rawName}${locationName ? ` en ${locationName}` : ""}. Explora tours y actividades relacionadas, con cancelación flexible y proveedores verificados en ${brand}.`;
+    if (translation?.shortDescription && locationName && !translation.shortDescription.includes(locationName)) {
+      description = `${translation.shortDescription.replace(/\.?\s*$/, '')} en ${locationName}.`;
+    }
+
+    const canonicalSlug = buildCanonicalSlug(attraction, translation, resolvedParams.slug);
     const prefix = explicitDefaultLanguage && language === explicitDefaultLanguage ? "" : `/${language}`;
     const canonicalUrl = `${getSiteOrigin()}${prefix}/attractions/${canonicalSlug}`;
 
     return {
-      title: `${title} | ${brand}`,
+      title: metaTitle,
       description,
       alternates: {
         canonical: canonicalUrl,
       },
       openGraph: {
-        title: `${title} | ${brand}`,
+        title: metaTitle,
         description,
         type: "website",
         url: canonicalUrl,
       },
       twitter: {
-        title: `${title} | ${brand}`,
+        title: metaTitle,
         description,
         card: "summary_large_image",
       },
@@ -91,7 +96,11 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   }
 }
 
-export default async function AttractionPage({ params, searchParams }: PageProps) {
+
+
+export default async function AttractionPage({ params, searchParams }: { params: Promise<any>, searchParams: Promise<any> }) {
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
   const settings = await getCachedSettings().catch<Settings>(() => ({
     appName: "Tourealo",
     availableLanguages: [],
@@ -99,12 +108,12 @@ export default async function AttractionPage({ params, searchParams }: PageProps
   const availableLanguages = getAvailableLanguages(settings.availableLanguages, settings.defaultLanguage);
   const fallbackLanguage = getFallbackLanguage(settings.defaultLanguage, availableLanguages);
   const explicitDefaultLanguage = normalizeLanguage(settings.defaultLanguage);
-  const language = await detectLanguage({ requestedLanguage: searchParams.lang, availableLanguages, fallbackLanguage });
+  const language = await detectLanguage({ requestedLanguage: resolvedSearchParams.lang, availableLanguages, fallbackLanguage });
   const prefix = explicitDefaultLanguage && language === explicitDefaultLanguage ? "" : `/${language}`;
 
   let attraction: Attraction | null = null;
   try {
-    attraction = await fetchAttractionBySlug(params.slug, { lang: language });
+    attraction = await fetchAttractionBySlug(resolvedParams.slug, { lang: language });
   } catch (error) {
     console.warn("Failed to load attraction", error);
   }
@@ -113,9 +122,10 @@ export default async function AttractionPage({ params, searchParams }: PageProps
     notFound();
   }
 
+  // Construir slug canónico: [slug]-[publicCode] usando la traducción principal
   const translation = selectTranslation(attraction, language, fallbackLanguage);
-  const canonicalSlug = buildCanonicalSlug(attraction, translation, params.slug);
-  const requestedSlug = decodeURIComponent(params.slug);
+  const canonicalSlug = `${translation?.slug || attraction.slug}-${attraction.publicCode}`;
+  const requestedSlug = decodeURIComponent(resolvedParams.slug);
   if (canonicalSlug && canonicalSlug.toLowerCase() !== requestedSlug.toLowerCase()) {
     redirect(`${prefix}/attractions/${canonicalSlug}`);
   }
@@ -136,13 +146,16 @@ export default async function AttractionPage({ params, searchParams }: PageProps
   const brandName = settings.appName || "Tourealo";
 
   return (
-    <AttractionDetailView
-      attraction={attraction}
-      translation={translation}
-      tours={tours}
-      language={language}
-      prefix={prefix}
-      brandName={brandName}
-    />
+    <>
+      {/* Language sync removed: global language handling is done by LanguageProvider */}
+      <AttractionDetailView
+        attraction={attraction}
+        translation={translation}
+        tours={tours}
+        language={language}
+        prefix={prefix}
+        brandName={brandName}
+      />
+    </>
   );
 }
