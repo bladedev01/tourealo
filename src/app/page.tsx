@@ -91,7 +91,7 @@ export default async function Home() {
       // Preferir countActivities devuelto por search suggestions (más fiable)
       count:
         Number(
-          (suggestLocations.find((s) => (s.slug && s.slug === loc.slug) || (s.publicCode && s.publicCode === (loc as any).publicCode))?.countActivities) ??
+          (suggestLocations.find((s: any) => (s.slug && s.slug === loc.slug) || (s.publicCode && s.publicCode === (loc as any).publicCode))?.countActivities) ??
             (loc as any).countActivities ??
             0,
         ) || 0,
@@ -104,7 +104,7 @@ export default async function Home() {
       name: loc.name ?? "",
       count:
         Number(
-          (suggestLocations.find((s) => (s.slug && s.slug === loc.slug) || (s.publicCode && s.publicCode === (loc as any).publicCode))?.countActivities) ??
+          (suggestLocations.find((s: any) => (s.slug && s.slug === loc.slug) || (s.publicCode && s.publicCode === (loc as any).publicCode))?.countActivities) ??
             (loc as any).countActivities ??
             0,
         ) || 0,
