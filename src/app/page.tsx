@@ -137,7 +137,7 @@ export default async function Home() {
     console.error("Home: fetchSearchSuggestions (categories) failed:", err?.message || err);
     suggest = { categories: [] };
   }
-  const categoriesTab = (suggest.categories || []).map((cat) => ({
+  const categoriesTab = (suggest.categories || []).map((cat: any) => ({
     slug: cat.slug || String(cat.id),
     name: cat.name,
     count: cat.countActivities || 0,
