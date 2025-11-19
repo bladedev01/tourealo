@@ -32,6 +32,24 @@ export default async function CheckoutLayout({ children }: Readonly<{ children: 
     availableLanguages: [],
     availableCurrencies: [],
   }));
+  // Sanitize settings before passing to client provider
+  const s: any = settings as any;
+  const publicSettings = {
+    appName: s.appName,
+    appLogo: s.appLogo,
+    appIcon: s.appIcon,
+    availableLanguages: s.availableLanguages || [],
+    availableCurrencies: s.availableCurrencies || [],
+    defaultLanguage: s.defaultLanguage,
+    frontendUrl: s.frontendUrl,
+    paypalEnabled: s.paypalEnabled,
+    paypalClientId: s.paypalClientId,
+    googleMapsApiKey: s.googleMapsApiKey ?? undefined,
+    branding: {
+      logoUrl: s.branding?.logoUrl,
+      defaultCoverUrl: s.branding?.defaultCoverUrl,
+    },
+  } as unknown as Settings;
   const availableLanguages = getAvailableLanguages(settings.availableLanguages, settings.defaultLanguage);
   const explicitDefaultLanguage = normalizeLanguage(settings.defaultLanguage);
   const fallbackLanguage = getFallbackLanguage(settings.defaultLanguage, availableLanguages);
@@ -44,7 +62,7 @@ export default async function CheckoutLayout({ children }: Readonly<{ children: 
         <LanguageServerProvider
           value={{ language, defaultLanguage: explicitDefaultLanguage ?? "", fallbackLanguage, availableLanguages }}
         >
-          <SettingsProvider initialSettings={settings}>
+          <SettingsProvider initialSettings={publicSettings}>
             <LanguageProvider
               initialLanguage={language}
               availableLanguages={availableLanguages}
