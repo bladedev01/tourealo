@@ -1,6 +1,6 @@
 "use client";
 import { useSearchParams, useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { confirmPaypal } from "@/lib/payments";
 
 const SuccessPage: React.FC = () => {
@@ -12,9 +12,11 @@ const SuccessPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const timerRef = useRef<number | null>(null);
   useEffect(() => {
     if (token && payerId && !confirmed && !loading) {
-      setLoading(true);
+      // defer setLoading to avoid synchronous setState in effect
+      timerRef.current = window.setTimeout(() => setLoading(true), 0);
       confirmPaypal({ bookingId, token, payerId })
         .then(() => {
           setConfirmed(true);
@@ -26,6 +28,14 @@ const SuccessPage: React.FC = () => {
         });
     }
   }, [token, payerId, bookingId, confirmed, loading]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white">

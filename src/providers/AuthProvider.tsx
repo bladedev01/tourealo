@@ -104,7 +104,7 @@ export function AuthProvider({ children, initialUser }: { children: React.ReactN
       const session = loadStoredSession();
       if (process.env.NODE_ENV !== "production") {
         // helpful debug while troubleshooting cookie/token-based sessions
-        // eslint-disable-next-line no-console
+         
         console.debug("[AuthProvider] bootstrap session", { token: session.token, user: session.user });
       }
       if (session.user && active) {

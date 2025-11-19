@@ -72,7 +72,8 @@ export function LocationDetailView({ location, tours, language }: LocationDetail
           try {
             const res = await svc.fetchAttractionTours(attr.id, { lang: language, pageSize: 1 });
             // prefer `total` if provided by backend
-            const total = (res && (res.total || (res.meta && res.meta.total))) ?? (Array.isArray(res.data) ? res.data.length : undefined);
+            const r = res as any;
+            const total = (r && (r.total || (r.meta && r.meta.total))) ?? (Array.isArray(r.data) ? r.data.length : undefined);
             return { key: String(attr.id || attr.slug || attr.href || ""), total: typeof total === "number" ? total : undefined };
           } catch (e) {
             return { key: String(attr.id || attr.slug || attr.href || ""), total: undefined };

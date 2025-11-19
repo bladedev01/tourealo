@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { apiFetch } from "@/lib/http";
 
 export interface PickupPoint {
@@ -23,11 +23,14 @@ export function usePickupPoints(tourId?: string | number | null) {
 
   useEffect(() => {
     if (!tourId) return;
-    setLoading(true);
+    const timer = window.setTimeout(() => setLoading(true), 0);
     apiFetch<PickupPoint[]>(`/tours/pickup-points/by-tour/${tourId}`)
       .then(setPickupPoints)
       .catch(() => setError("No se pudieron cargar los puntos de recogida"))
       .finally(() => setLoading(false));
+    return () => {
+      clearTimeout(timer);
+    };
   }, [tourId]);
 
   return { pickupPoints, loading, error };

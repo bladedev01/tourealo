@@ -274,6 +274,7 @@ export default function BookingsPage() {
   const persons = selectedBooking ? getPersons(selectedBooking) : { adults: 0, children: 0, total: 0 };
   const currency = selectedBooking?.currency || "USD";
   const coverImage = selectedBooking?.tour?.coverImageUrl || (selectedBooking as { coverImageUrl?: string })?.coverImageUrl || fallbackImage;
+  const voucherCode = selectedBooking && typeof selectedBooking.code === 'string' && selectedBooking.code.trim() !== '' ? selectedBooking.code : undefined;
 
   return (
     <div className="space-y-8">
@@ -514,9 +515,9 @@ export default function BookingsPage() {
                     <User className="h-4 w-4" />
                     {t("actions.edit", "Cambiar datos")}
                   </button>
-                  {selectedBooking.code && typeof selectedBooking.code === 'string' && selectedBooking.code.trim() !== '' && (
+                  {voucherCode && (
                     <button
-                      onClick={() => handleNavigate(`/voucher/${encodeURIComponent(selectedBooking.code)}`)}
+                      onClick={() => handleNavigate(`/voucher/${encodeURIComponent(voucherCode)}`)}
                       className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
                     >
                       <ShieldCheck className="h-4 w-4" />

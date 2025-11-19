@@ -11,11 +11,13 @@ const CancelPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [cancelled, setCancelled] = useState(false);
   const cancelCalledRef = useRef(false);
+  const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (bookingId && !cancelled && !cancelCalledRef.current) {
       cancelCalledRef.current = true;
-      setLoading(true);
+      // defer setLoading to avoid synchronous setState in effect
+      timerRef.current = window.setTimeout(() => setLoading(true), 0);
       cancelPayment({ bookingId })
         .then(() => {
           setCancelled(true);
@@ -27,6 +29,14 @@ const CancelPage: React.FC = () => {
         });
     }
   }, [bookingId, cancelled]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white">

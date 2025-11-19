@@ -232,7 +232,7 @@ export default function DashboardPage() {
                           : status === "cancelled"
                             ? "bg-rose-100 text-rose-700"
                             : "bg-slate-100 text-slate-600";
-                    const display = buildTourDisplay(booking.tour || {}, (user?.language || "es"));
+                    const display = buildTourDisplay(booking.tour || {}, ((user as any)?.language || "es"));
                     const imageSrc = booking.tour?.coverImageUrl || (booking as { coverImageUrl?: string }).coverImageUrl || "https://via.placeholder.com/128x128?text=Tour";
                     return (
                       <article key={booking.id} className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

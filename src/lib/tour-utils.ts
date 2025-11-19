@@ -40,32 +40,33 @@ function getLocaleValue(value: unknown, language: string) {
   return "";
 }
 
-function pickLocation(tour: Tour) {
-  if (Array.isArray(tour.locations) && tour.locations.length) {
-    const city = tour.locations.find((loc: LocationRef) => loc.type === "city");
-    const country = tour.locations.find((loc: LocationRef) => loc.type === "country");
-    const base = city || tour.locations[0];
+function pickLocation(tour: Partial<Tour> | undefined) {
+  const locations = Array.isArray(tour?.locations) ? tour!.locations : undefined;
+  if (Array.isArray(locations) && locations.length) {
+    const city = locations.find((loc: LocationRef) => loc.type === "city");
+    const country = locations.find((loc: LocationRef) => loc.type === "country");
+    const base = city || locations[0];
     return { city, country, base };
   }
-  return { city: undefined, country: undefined, base: tour.location };
+  return { city: undefined, country: undefined, base: tour?.location };
 }
 
-export function buildTourDisplay(tour: Tour, language: string) {
-  const translationMap = Array.isArray(tour.translations)
-    ? mapTranslationsArrayToObject(tour.translations)
+export function buildTourDisplay(tour: Partial<Tour> = {}, language: string) {
+  const translationMap = Array.isArray(tour.translations as any)
+    ? mapTranslationsArrayToObject(tour.translations as any)
     : (tour.translations as Record<string, Record<string, string>> | undefined);
 
   const title =
     getLocaleValue(translationMap?.title, language) ||
     getLocaleValue((translationMap as Record<string, Record<string, string>> | undefined)?.name, language) ||
-    tour.name ||
-    tour.title ||
+    (tour.name as string | undefined) ||
+    (tour.title as string | undefined) ||
     "";
 
   const shortDescription =
     getLocaleValue(translationMap?.shortDescription, language) ||
     getLocaleValue(translationMap?.description, language) ||
-    tour.shortDescription ||
+    (tour.shortDescription as string | undefined) ||
     "";
 
   const { city, country, base } = pickLocation(tour);
@@ -89,16 +90,16 @@ export function buildTourDisplay(tour: Tour, language: string) {
     return slug && tour.publicCode ? `${slug}-${tour.publicCode}` : slug;
   })();
   const imageUrl =
-    tour.coverImageUrl ||
-    tour.image ||
-    (Array.isArray(tour.gallery) && tour.gallery[0]) ||
+    (tour.coverImageUrl as string | undefined) ||
+    (tour.image as string | undefined) ||
+    (Array.isArray(tour.gallery as any) && (tour.gallery as any)[0]) ||
     "https://source.unsplash.com/400x250/?travel";
 
   const primaryLocationName =
-    city?.name || country?.name || tour.city || tour.location?.name || "";
+    city?.name || country?.name || (tour.city as string | undefined) || tour.location?.name || "";
 
   const currencyCode = String(tour.currency || "USD").toUpperCase();
-  const numericPrice = Number(tour.basePrice ?? tour.price);
+  const numericPrice = Number((tour.basePrice as any) ?? (tour.price as any));
   let priceLabel: string | null = null;
   if (!Number.isNaN(numericPrice) && numericPrice > 0) {
     try {
@@ -115,7 +116,7 @@ export function buildTourDisplay(tour: Tour, language: string) {
     priceLabel = `${tour.basePrice} ${currencyCode}`.trim();
   }
 
-  const duration = tour.duration;
+  const duration = tour.duration as number | string | undefined;
   let durationLabel: string | null = null;
   if (duration) {
     const minutes = Number(duration);
@@ -133,13 +134,13 @@ export function buildTourDisplay(tour: Tour, language: string) {
   }
 
   const groupSizeValue =
-    tour.groupSize || tour.maxGroupSize || tour.customFields?.maxParticipants || tour.minGroupSize || null;
+    (tour.groupSize as any) || (tour.maxGroupSize as any) || (tour.customFields as any)?.maxParticipants || (tour.minGroupSize as any) || null;
   const groupLabel = groupSizeValue ? `${groupSizeValue} personas` : null;
 
-  const languageCodes = Array.isArray(tour.customFields?.languageCodes as string[])
-    ? (tour.customFields?.languageCodes as string[])
+  const languageCodes = Array.isArray((tour.customFields as any)?.languageCodes as string[])
+    ? ((tour.customFields as any).languageCodes as string[])
     : [];
-  const guideInfo = (tour.customFields?.guide as { languages?: string } | undefined)?.languages;
+  const guideInfo = ((tour.customFields as any)?.guide as { languages?: string } | undefined)?.languages;
   const languagesArray = languageCodes.length
     ? languageCodes
     : typeof guideInfo === "string"
@@ -147,27 +148,27 @@ export function buildTourDisplay(tour: Tour, language: string) {
       : [];
   const languagesLabel = languagesArray.length ? languagesArray.map((code: string) => code.toUpperCase()).join(", ") : null;
 
-  const hasFreeCancellation = Array.isArray(tour.cancellationPolicy?.refundTiers)
-    ? tour.cancellationPolicy.refundTiers.some(
-        (tier) => Number(tier.refundPercent ?? tier.refund_percent) === 100,
+  const hasFreeCancellation = Array.isArray((tour.cancellationPolicy as any)?.refundTiers)
+    ? (tour.cancellationPolicy as any).refundTiers.some(
+        (tier: any) => Number(tier.refundPercent ?? tier.refund_percent) === 100,
       )
     : false;
-  const cancellationLabel = hasFreeCancellation ? "Cancelación gratis" : tour.cancellationPolicy?.title || null;
+  const cancellationLabel = hasFreeCancellation ? "Cancelación gratis" : (tour.cancellationPolicy as any)?.title || null;
 
-  const supplierName = tour.supplier?.company_name || tour.supplier?.name || null;
+  const supplierName = (tour.supplier as any)?.company_name || (tour.supplier as any)?.name || null;
 
-  const ratingValue = Number(tour.rating ?? tour.averageRating ?? tour.stars);
+  const ratingValue = Number((tour.rating as any) ?? (tour.averageRating as any) ?? (tour.stars as any));
   const formattedRating = !Number.isNaN(ratingValue) && ratingValue > 0 ? ratingValue.toFixed(1) : null;
   const reviewsCount =
-    typeof tour.reviewsCount === "number"
-      ? tour.reviewsCount
-      : Array.isArray(tour.reviews)
-        ? tour.reviews.length
+    typeof (tour.reviewsCount as any) === "number"
+      ? (tour.reviewsCount as any)
+      : Array.isArray(tour.reviews as any)
+        ? (tour.reviews as any).length
         : null;
 
   const isFeatured = Boolean(tour.isFeatured);
 
-  const href = locationSlug && titleSlug ? `/tours/${locationSlug}/${titleSlug}` : `/tours/${tour.id}`;
+  const href = locationSlug && titleSlug ? `/tours/${locationSlug}/${titleSlug}` : `/tours/${(tour.id as any) || ""}`;
 
   return {
     tour,

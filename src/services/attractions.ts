@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/http";
-// ...existing code...
+// Attraction type not defined in this package yet — use a loose alias until a proper type is added
+type Attraction = any;
 import type { Tour } from "@/types/tour";
 
 export async function fetchAttractionBySlug(slug: string, params: Record<string, string | number | undefined> = {}) {

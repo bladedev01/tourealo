@@ -21,7 +21,7 @@ if (!PUBLIC_API_BASE) {
   // build-time crashes and provides a reasonable default.
   PUBLIC_API_BASE = "https://api.tourealo.com/api";
   // Use console.warn so the message appears in build logs without failing the build.
-  // eslint-disable-next-line no-console
+   
   console.warn("NEXT_PUBLIC_API_BASE_URL is not set. Falling back to https://api.tourealo.com/api.\nSet the env var in Vercel project settings to avoid this message.");
 }
 

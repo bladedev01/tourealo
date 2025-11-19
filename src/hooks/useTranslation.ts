@@ -15,10 +15,19 @@ export function useTranslation(namespace: string, defaults?: Record<string, stri
     }
   }, [namespace, dictionary, defaults, loadNamespace]);
 
+  const interpolate = (template: string, vars?: Record<string, unknown>) => {
+    if (!vars) return template;
+    return template.replace(/\{(\w+)\}/g, (_match, name) => {
+      const val = (vars as Record<string, unknown>)[name];
+      return val === undefined || val === null ? "" : String(val);
+    });
+  };
+
   const t = useCallback(
-    (key: string, fallback?: string) => {
+    (key: string, fallback?: string, vars?: Record<string, unknown>) => {
       if (dictionary && key in dictionary) {
-        return dictionary[key];
+        const value = dictionary[key];
+        return interpolate(value, vars);
       }
       // If the namespace hasn't loaded yet, request it and include this key as a default
       if (!dictionary) {
@@ -35,7 +44,7 @@ export function useTranslation(namespace: string, defaults?: Record<string, stri
         // helpful debug for tracing
         console.debug('[useTranslation] buffered default key and triggered loadNamespace', { namespace, key, fallback });
       }
-      return fallback ?? key;
+      return interpolate(fallback ?? key, vars);
     },
     [dictionary, loadNamespace, namespace, addPendingDefaults],
   );

@@ -10,7 +10,7 @@ export type AttractionCardProps = {
 };
 
 export const AttractionCard: React.FC<AttractionCardProps> = ({ attraction, href, toursCount = null }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation("frontend-common");
   const { language } = useLanguage();
 
   const shortLang = typeof language === "string" && language.includes("-") ? language.split("-")[0] : language || "en";

@@ -36,7 +36,7 @@ export function Footer() {
   // Hide global footer for checkout routes
   try {
     // dynamic import safe access to next/navigation
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const { usePathname } = require("next/navigation");
     const pathname = usePathname?.() ?? "";
     if (pathname.includes("/checkout")) return null;
